@@ -1,0 +1,204 @@
+func CheckLogFile()
+	Line_Count = GET_FILE_LEN(LogFile)
+	Text ="Date "& "Time " &" Type "& "Operation " & "Price " & "TakeProfit " & "StopLoss " & "MaxOffset " 
+	    IF ((Line_Count == -1) OR (Line_Count == 0)) 
+		    WRITELN(LogFile, Text) 
+		    Line_Count = GET_FILE_LEN(LogFile) 
+		    IF ((Line_Count == -1) OR (Line_Count == 0)) 
+			    MESSAGE("Ошибка файла лога.", 3) 
+			    RETURN 
+	    	END IF 
+    	END IF 
+end func
+
+'перевод строки в число
+func ToNum(str)
+	total=""
+	for k from 0 to len(str)-1
+		
+			if substr(str,k,1)==","
+				total=total & "."
+			else
+				total=total & substr(str,k,1)
+			end if
+	
+	end for
+	result=total+0
+end func
+
+
+
+
+func GetDate()
+    SERVERDATE = GET_INFO_PARAM("TRADEDATE")
+	DATE = SUBSTR(SERVERDATE,6,4) & SUBSTR(SERVERDATE,3,2) & SUBSTR(SERVERDATE,0,2)
+	YEAR = 0 + SUBSTR(DATE,0,4) 
+	MONTH = 0 + SUBSTR(DATE,4,2) 
+	DAY = 0 + SUBSTR(DATE,6,2) 
+    DATE = fTextDate(YEAR, MONTH, DAY)
+	result=DATE
+end func 
+
+func Pause(pause_time)
+    pst = get_datetime()
+    firstTime = 0 + get_value(pst, "HOUR")*3600000 + get_value(pst, "MIN")*60000 + get_value(pst, "SEC")*1000 + get_value(pst, "MILLISEC")
+    for pst_flag from 0 to 1
+        pst = get_datetime()
+        secondTime = 0 + get_value(pst, "HOUR")*3600000 + get_value(pst, "MIN")*60000 + get_value(pst, "SEC")*1000 + get_value(pst, "MILLISEC")
+		if secondTime - firstTime <= pause_time
+		      pst_flag = pst_flag - 1
+		end if 
+    end for
+end func
+
+func GetTimeFrame()
+IDENTIFICATION = PriceTag
+NUMBER=3 'номер свечи
+NUMBER=NUMBER+1
+OPEN=0
+HIGH=0
+LOW=0
+CLOSE=0
+VOLUME=0
+TIME_CANDLE=0
+TIME_CANDLE_2=0
+DATE_CANDLE=0
+INTERVAL=0
+TRUE_INTERVAL=0
+SERVERTIME=GET_INFO_PARAM("SERVERTIME")
+SERVERDATE=GET_INFO_PARAM("TRADEDATE")
+TIMESERV=SUBSTR(SERVERTIME,0,2)&SUBSTR(SERVERTIME,3,2)&SUBSTR(SERVERTIME,6,7)
+HOUR=SUBSTR(TIMESERV,0,2)+0
+MIN=SUBSTR(TIMESERV,2,2)+0
+SEC=SUBSTR(TIMESERV,4,2)+0
+TIME=TIMESERV+0
+DATE=SUBSTR(SERVERDATE,6,4)&SUBSTR(SERVERDATE,3,2)&SUBSTR(SERVERDATE,0,2)
+TRID=TIME&DATE
+
+OHLC(NUMBER)
+result=INTERVAL
+end func  
+
+FUNC OHLC(NUMBER)
+FOR INTERVALFIND FROM 0 TO 1
+M=0 ' ??????? ????????? ??????
+CURYEAR=GET_VALUE(GET_DATETIME(), "YEAR")
+CURMONTH=GET_VALUE(GET_DATETIME(), "MONTH")
+CURDAY=GET_VALUE(GET_DATETIME(), "DAY")
+CURHOUR = GET_VALUE(GET_DATETIME(), "HOUR")
+CURMIN = GET_VALUE(GET_DATETIME(), "MIN")
+N=1000 ' ??????? ??????
+FOR I FROM 1 TO N
+TEXTDATE=FTEXTDATE(CURYEAR,CURMONTH,CURDAY) &""
+TEXTTIME=FTEXTTIME(CURHOUR,CURMIN) & ""
+
+' ========= ???? ??????????? ?????????
+IF I=1 AND INTERVAL=0 ' ?? ?????? ???? ???????? ????? ????????? ?????
+INTERVAL=1 ' ????? ????? ????? ????????
+TIME_CANDLE=GET_VALUE(GET_CANDLE_EX(IDENTIFICATION, TEXTDATE, TEXTTIME),"TIME")
+CURHOUR=SUBSTR(TIME_CANDLE,0,2)+0 ' ????? ????? ?????? ??????? ?? ??????????
+CURMIN=SUBSTR(TIME_CANDLE,2,2)+0
+END IF
+IF I=2 AND INTERVAL=1 AND TRUE_INTERVAL=0 ' ?? ?????? ???? ???????? ????? ?????? ?????
+TIME_CANDLE_2=GET_VALUE(GET_CANDLE_EX(IDENTIFICATION, TEXTDATE, TEXTTIME),"TIME")
+INTERVAL=FINDING_INTERVAL(TIME_CANDLE,TIME_CANDLE_2) ' ? ?????????? ??????? ???????? ??????? ?? ??????? ????? ?????? ? ?????? ?????? - ??? ? ????? ??????? ????????
+TRUE_INTERVAL=1 ' ???? ???????????? ??????????? ????????? ?? ???? ???????? ??????
+CURHOUR = GET_VALUE(GET_DATETIME(), "HOUR") ' ?????????? ??????? ????????? ????????
+CURMIN = GET_VALUE(GET_DATETIME(), "MIN")
+TEXTTIME=FTEXTTIME(CURHOUR,CURMIN) & ""
+END IF
+' ========= ????? ????? ??????????? ?????????
+
+IF GET_VALUE(GET_COLLECTION_ITEM (GET_VALUE (GET_CANDLE_EX(IDENTIFICATION, TEXTDATE, TEXTTIME),"LINES"),0),"OPEN")+0>0 AND TRUE_INTERVAL=1
+M=M+1 ' ??????? ?????????? ????????? ????????
+IF M=NUMBER ' ???? ????????????? ??????? - ???????? ?????? ?? ????????? ?????
+OPEN=GET_VALUE(GET_COLLECTION_ITEM (GET_VALUE (GET_CANDLE_EX(IDENTIFICATION, TEXTDATE, TEXTTIME),"LINES"),0),"OPEN")+0
+HIGH=GET_VALUE(GET_COLLECTION_ITEM (GET_VALUE (GET_CANDLE_EX(IDENTIFICATION, TEXTDATE, TEXTTIME),"LINES"),0),"HIGH")+0
+LOW=GET_VALUE(GET_COLLECTION_ITEM (GET_VALUE (GET_CANDLE_EX(IDENTIFICATION, TEXTDATE, TEXTTIME),"LINES"),0),"LOW")+0
+CLOSE=GET_VALUE(GET_COLLECTION_ITEM (GET_VALUE (GET_CANDLE_EX(IDENTIFICATION, TEXTDATE, TEXTTIME),"LINES"),0),"CLOSE")+0
+VOLUME=GET_VALUE(GET_COLLECTION_ITEM (GET_VALUE (GET_CANDLE_EX(IDENTIFICATION, TEXTDATE, TEXTTIME),"LINES"),0),"VOLUME")+0
+TIME_CANDLE=GET_VALUE(GET_CANDLE_EX(IDENTIFICATION, TEXTDATE, TEXTTIME),"TIME") ' ???????? ?????? ????? ????????? ?????
+DATE_CANDLE=TEXTDATE ' ... ? ???? ??? ???????
+I=N
+INTERVALFIND=1
+END IF
+ELSE
+INTERVALFIND=0
+END IF
+CURMIN=CURMIN-INTERVAL
+IF CURMIN<0
+CURMIN=60+CURMIN
+CURHOUR=CURHOUR-1
+IF CURHOUR<0
+CURHOUR=23
+CURDAY=CURDAY-1
+IF CURDAY<1
+CURDAY=31
+CURMONTH=CURMONTH-1
+IF CURMONTH<1
+CURMONTH=12
+CURYEAR=CURYEAR-1
+IF CURYEAR<0
+MESSAGE ("NO DATA",1)
+END IF
+END IF
+END IF
+END IF
+END IF
+END FOR
+END FOR
+END FUNC
+
+FUNC FTEXTDATE(YEAR,MONTH,DAY)
+IF (LEN(MONTH) < 2)
+MONTH = "0" & MONTH
+END IF
+IF (LEN(DAY) < 2)
+DAY = "0" & DAY
+END IF
+RESULT = YEAR & MONTH & DAY
+END FUNC
+
+FUNC FTEXTTIME(HOUR,MIN,SEC)
+IF (LEN(HOUR) < 2)
+HOUR = "0" & HOUR
+END IF
+IF (LEN(MIN) < 2)
+MIN = "0" & MIN
+END IF
+	if (LEN(SEC) < 2)
+		SEC = "0" & SEC
+	end if
+RESULT = HOUR & MIN & SEC
+END FUNC
+
+FUNC FINDING_INTERVAL(TIME_CANDLE,TIME_CANDLE_2)
+BEGIN_TIME=SUBSTR(TIME_CANDLE,0,2)*3600+SUBSTR(TIME_CANDLE,2,2)*60
+END_TIME=SUBSTR(TIME_CANDLE_2,0,2)*3600+SUBSTR(TIME_CANDLE_2,2,2)*60
+RESULT=(BEGIN_TIME-END_TIME)/60
+END FUNC
+
+FUNC fTextDate(Year, Month, Day)
+	if (LEN(Month) < 2)
+		Month = "0" & Month
+	end if
+	if (LEN(Day) < 2)
+		Day = "0" & Day
+	end if
+	
+	result = Year & Month & Day
+END FUNC
+
+FUNC fTextTime(Hour, Min, Sec)
+	if (LEN(Hour) < 2)
+		Hour = "0" & Hour
+	end if
+		if (LEN(Min) < 2)
+		Min = "0" & Min
+	end if 
+		if (LEN(Sec) < 2)
+		Sec = "0" & Sec
+	end if
+
+	result = Hour & Min & Sec
+END FUNC
